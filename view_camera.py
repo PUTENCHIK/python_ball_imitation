@@ -81,7 +81,14 @@ while True:
                 big_contours[area] = contour
                 
         for contour_area in sorted(big_contours)[-amount-1:]:
-            cv2.drawContours(origin, [big_contours[contour_area]], 0, (0, 255, 0), 3)
+            contour = big_contours[contour_area]
+            
+            eps = 1e-3 * cv2.arcLength(contour, True)
+            approx = cv2.approxPolyDP(contour, eps, True)
+            for p in approx:
+                cv2.circle(origin, tuple(*p), 2, (255, 0, 0), 2)
+                
+            cv2.drawContours(origin, [contour], 0, (0, 255, 0), 3)
         
         cv2.imshow(debug_window, result)
     
