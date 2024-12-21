@@ -36,6 +36,20 @@ def create_square(space, pos):
     square_shape.color = [randrange(256) for i in range(4)]
     space.add(square_body, square_shape)
 
+def create_curve(space, start_pos, end_pos, num_segments=20):
+    points = []
+    for i in range(num_segments + 1):
+        # Используем уравнение квадратичной кривой (например, параболы)
+        t = i / num_segments
+        x = (1 - t) * start_pos[0] + t * end_pos[0]  # Линейная интерполяция по x
+        y = (1 - t) * start_pos[1] + t * end_pos[1] - 600 * (t - 0.5) ** 2  # Кривая
+        points.append((x, y))
+    
+    for i in range(len(points) - 1):
+        line_shape = pymunk.Segment(space.static_body, points[i], points[i + 1], 5)
+        line_shape.friction = 0.5
+        space.add(line_shape)
+create_curve(space, (0, 100), (700, 500), num_segments=30)
 
 #Отрисовка
 while True:
