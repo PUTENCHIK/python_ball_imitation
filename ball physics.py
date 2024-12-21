@@ -37,15 +37,14 @@ def create_circle(space, pos):
     space.add(square_body, square_shape)
     return square_body
 
-def create_curve(space, start_pos, end_pos, num_segments=20):
-    points = []
-    for i in range(num_segments + 1):
-        # Используем уравнение квадратичной кривой (например, параболы)
-        t = i / num_segments
-        x = (1 - t) * start_pos[0] + t * end_pos[0]  # Линейная интерполяция по x
-        y = (1 - t) * start_pos[1] + t * end_pos[1] - 600 * (t - 0.5) ** 2  # Кривая
-        points.append((x, y))
-    
+
+        
+def create_curve(space, points):
+    # Проверяем, что массив точек содержит больше 1 точки
+    if len(points) < 2:
+        raise ValueError("Должно быть как минимум 2 точки для создания кривой.")
+
+    # Создаем отрезки между заданными точками
     for i in range(len(points) - 1):
         line_shape = pymunk.Segment(space.static_body, points[i], points[i + 1], 5)
         line_shape.friction = 0.5
@@ -53,9 +52,9 @@ def create_curve(space, start_pos, end_pos, num_segments=20):
         
 def create_polygon(space, points):
     # Преобразуем точки в Pymunk формат
-    pymunk_points = [(point[0], HEIGHT - point[1]) for point in points]  # Flip y-координаты
+    pymunk_points = [(point[0], point[1]) for point in points]  # Flip y-координаты
     polygon_shape = pymunk.Poly(space.static_body, pymunk_points)
-    polygon_shape.friction = 0.5
+    polygon_shape.friction = 0.1
     space.add(polygon_shape)
     return polygon_shape
     
