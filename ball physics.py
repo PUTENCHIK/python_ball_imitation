@@ -25,7 +25,7 @@ segment_shape.friction = 1.0
 
 #квадратики
 body = pymunk.Body()
-def create_square(space, pos):
+def create_circle(space, pos):
     square_mass, square_size = 1, (60, 60)
     square_moment = pymunk.moment_for_box(square_mass, square_size)
     square_body = pymunk.Body(square_mass, square_moment)
@@ -35,6 +35,7 @@ def create_square(space, pos):
     square_shape.friction = 1.0
     square_shape.color = [randrange(256) for i in range(4)]
     space.add(square_body, square_shape)
+    return square_body
 
 def create_curve(space, start_pos, end_pos, num_segments=20):
     points = []
@@ -65,14 +66,16 @@ points = [
     (300, 350),
     (400, 500),
     (500, 300),
-    (600, 350),
-    (700, 300)
+    (300, 350),
+    (400, 300)
 ]
 print(create_polygon(space, points))
 
 # Создаем полигон с заданными точками
 create_polygon(space, points)
 #Отрисовка
+circle = None
+
 while True:
     surface.fill(pg.Color('black'))
 
@@ -82,8 +85,12 @@ while True:
         # спавн кубиков
         if i.type == pg.MOUSEBUTTONDOWN:
             if i.button == 1:
-                create_square(space, i.pos)
+                circle = create_circle(space, i.pos)
                 print(i.pos)
+
+    if circle is not None:
+        x, y = circle.position
+        print(f"Координаты шарика изменились: x={x:.2f}, y={y:.2f}")
 
     space.step(1 / FPS)
     space.debug_draw(draw_options)
