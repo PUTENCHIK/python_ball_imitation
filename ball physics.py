@@ -1,63 +1,59 @@
-import pymunk
-import pygame
-import sys
+import pygame as pg
+from random import randrange
+import pymunk.pygame_util
+pymunk.pygame_util.positive_y_is_up = False
 
-# Константы
-WIDTH, HEIGHT = 800, 600
+#параметры PyGame
+RES = WIDTH, HEIGHT = 900, 720
 FPS = 60
 
-# Инициализация Pygame и Pymunk
-pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-clock = pygame.time.Clock()
+pg.init()
+surface = pg.display.set_mode(RES)
+clock = pg.time.Clock()
+draw_options = pymunk.pygame_util.DrawOptions(surface)
+
+#настройки Pymunk
 space = pymunk.Space()
-space.gravity = (0, 800)  # гравитация вниз
+space.gravity = 0, 8000
 
-# Функция для создания линии
-def create_line(space, start_pos, end_pos):
-    line_shape = pymunk.Segment(space.static_body, start_pos, end_pos, 5)
-    line_shape.friction = 0.5
-    space.add(line_shape)
+#платформа
+segment_shape = pymunk.Segment(space.static_body, (2, HEIGHT), (WIDTH, HEIGHT), 26)
+space.add(segment_shape)
+segment_shape.elasticity = 0.8
+segment_shape.friction = 1.0
 
-# Создание линий
-create_line(space, (100, 500), (700, 500))  # горизонтальная линия
-create_line(space, (300, 400), (500, 400))  # второй уровень
 
-# Создание шара
-def create_ball(space, position):
-    mass = 1
-    radius = 20
-    moment = pymunk.moment_for_circle(mass, 0, radius, (0, 0))
-    body = pymunk.Body(mass, moment)
-    body.position = position
-    shape = pymunk.Circle(body, radius)
-    shape.friction = 0.5
-    space.add(body, shape)
-    return shape
+#квадратики
+body = pymunk.Body()
+def create_square(space, pos):
+    square_mass, square_size = 1, (60, 60)
+    square_moment = pymunk.moment_for_box(square_mass, square_size)
+    square_body = pymunk.Body(square_mass, square_moment)
+    square_body.position = pos
+    square_shape = pymunk.Circle(square_body, 25)
+    square_shape.elasticity = 0.4
+    square_shape.friction = 1.0
+    square_shape.color = [randrange(256) for i in range(4)]
+    space.add(square_body, square_shape)
 
-# Создаем шар
-ball = create_ball(space, (400, 300))
 
-# Главный цикл игры
+#Отрисовка
 while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+    surface.fill(pg.Color('black'))
 
-    # Обновляем физику
+    for i in pg.event.get():
+        if i.type == pg.QUIT:
+            exit()
+        # спавн кубиков
+        if i.type == pg.MOUSEBUTTONDOWN:
+            if i.button == 1:
+                create_square(space, i.pos)
+                print(i.pos)
+
     space.step(1 / FPS)
+    space.debug_draw(draw_options)
 
-    # Отрисовка
-    screen.fill((255, 255, 255))  # белый фон
-
-    # Отрисовка линий
-    for shape in space.shapes:
-        if isinstance(shape, pymunk.Segment):
-            pygame.draw.line(screen, (0, 0, 0), shape.a, shape.b, 5)
-
-    # Отрисовка шара
-    pygame.draw.circle(screen, (255, 0, 0), (int(ball.body.position.x), int(ball.body.position.y)), 20)
-
-    pygame.display.flip()
+    pg.display.flip()
     clock.tick(FPS)
+
+print('end')
