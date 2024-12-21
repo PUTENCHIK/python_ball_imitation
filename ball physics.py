@@ -49,8 +49,29 @@ def create_curve(space, start_pos, end_pos, num_segments=20):
         line_shape = pymunk.Segment(space.static_body, points[i], points[i + 1], 5)
         line_shape.friction = 0.5
         space.add(line_shape)
-create_curve(space, (0, 100), (700, 500), num_segments=30)
+        
+def create_polygon(space, points):
+    # Преобразуем точки в Pymunk формат
+    pymunk_points = [(point[0], HEIGHT - point[1]) for point in points]  # Flip y-координаты
+    polygon_shape = pymunk.Poly(space.static_body, pymunk_points)
+    polygon_shape.friction = 0.5
+    space.add(polygon_shape)
+    return polygon_shape
+    
+#create_curve(space, (0, 100), (700, 500), num_segments=30)
+points = [
+    (100, 300),
+    (200, 400),
+    (300, 350),
+    (400, 500),
+    (500, 300),
+    (600, 350),
+    (700, 300)
+]
+print(create_polygon(space, points))
 
+# Создаем полигон с заданными точками
+create_polygon(space, points)
 #Отрисовка
 while True:
     surface.fill(pg.Color('black'))
