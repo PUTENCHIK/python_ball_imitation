@@ -1,4 +1,5 @@
 import cv2
+import pathlib
 import numpy as np
 
 
@@ -28,9 +29,11 @@ def aupdate(value):
 
 main_window = "Window"
 debug_window = "Changed"
-window = cv2.namedWindow(main_window, cv2.WINDOW_GUI_NORMAL)
-window = cv2.namedWindow(debug_window, cv2.WINDOW_GUI_NORMAL)
-camera = cv2.VideoCapture("rtsp://192.168.254.3:8080/h264_ulaw.sdp")
+window = cv2.namedWindow(main_window, cv2.WINDOW_NORMAL)
+window = cv2.namedWindow(debug_window, cv2.WINDOW_NORMAL)
+
+is_camera_available = False
+camera = cv2.VideoCapture("rtsp://192.168.254.3:8080/h264_ulaw.sdp") if is_camera_available else None
 
 cv2.setMouseCallback(main_window, on_mouse_callback)
 ball_position = None
@@ -44,8 +47,14 @@ cv2.createTrackbar("Delta", debug_window, delta, 255, dupdate)
 amount = 5
 cv2.createTrackbar("Amount", debug_window, amount, 255, aupdate)
 
+path = pathlib.Path(__file__).parent
+screen = cv2.imread(path / "screen.jpg")
+
 while True:
-    _, frame = camera.read()
+    if is_camera_available:
+        _, frame = camera.read()
+    else:
+        frame = screen
     origin = frame.copy()
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     
