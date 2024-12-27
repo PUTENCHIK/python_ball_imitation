@@ -52,26 +52,25 @@ def create_curve(space, points):
         
 def create_polygon(space, points):
     # Преобразуем точки в Pymunk формат
-    pymunk_points = [(point[0], point[1]) for point in points]  # Flip y-координаты
-    polygon_shape = pymunk.Poly(space.static_body, pymunk_points)
+    polygon_shape = pymunk.Poly(space.static_body, points)
     polygon_shape.friction = 0.1
     space.add(polygon_shape)
     return polygon_shape
     
 #create_curve(space, (0, 100), (700, 500), num_segments=30)
-points = [
-    (100, 300),
-    (200, 400),
-    (300, 350),
-    (400, 500),
-    (500, 300),
-    (300, 350),
-    (400, 300)
+points1 = [
+    (0, 0),
+    (20, 100),
+    (100, 100),
+    (150, 150),
+    (0, 150),
 ]
-print(create_polygon(space, points))
+print(create_polygon(space, points1))
+
+# print(create_polygon(space, points1))
 
 # Создаем полигон с заданными точками
-create_polygon(space, points)
+create_polygon(space, points1)
 #Отрисовка
 circle = None
 
