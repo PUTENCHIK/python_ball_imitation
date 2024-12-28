@@ -40,11 +40,11 @@ camera = cv2.VideoCapture("rtsp://192.168.254.3:8080/h264_ulaw.sdp") if is_camer
 cv2.setMouseCallback(main_window, on_mouse_callback)
 ball_position = None
 
-low, up = 44, 65
+low, up = 0, 115
 cv2.createTrackbar("Lower", main_window, low, 255, lupdate)
 cv2.createTrackbar("Upper", main_window, up, 255, uupdate)
 
-delta = 35
+delta = 100
 cv2.createTrackbar("Delta", debug_window, delta, 255, dupdate)
 amount = 5
 cv2.createTrackbar("Amount", debug_window, amount, 255, aupdate)
@@ -65,7 +65,8 @@ while True:
                    (ball_position[1], ball_position[0]),
                    5, (255, 255, 0), 2)
 
-        pixel = hsv[ball_position[0], ball_position[1]]
+        pixel = hsv[ball_position[0], ball_position[1]].astype(int)
+        # pixel = [15, 12, 83]
         cv2.putText(origin,
                     f"{pixel}",
                     (30, 60),
@@ -74,10 +75,11 @@ while True:
                     (0, 255, 0),
                     3)
 
-        lower = np.array([pixel[0] - delta, pixel[1] - delta, pixel[2] - delta])
-        upper = np.array([pixel[0] + delta, pixel[1] + delta, pixel[2] + delta])
+        lower = np.array([low, pixel[1] - delta, low])
+        upper = np.array([up, pixel[1] + delta, up])
         mask = cv2.inRange(hsv, lower, upper)
-        mask = cv2.dilate(mask, np.ones((10, 10)))
+        mask = cv2.erode(mask, np.ones((3, 3)))
+        mask = cv2.dilate(mask, np.ones((3, 3)))
         thresh = cv2.bitwise_and(frame, frame, mask=mask)
 
         gray = cv2.cvtColor(thresh, cv2.COLOR_BGR2GRAY)
