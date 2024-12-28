@@ -114,7 +114,7 @@ def extract_all_niggers(frame):
     gray = cv2.cvtColor(thresh, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (7, 7), 0)
 
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     bound_index = None
     bound_area = 0
     for i, contour in enumerate(contours):
@@ -124,7 +124,6 @@ def extract_all_niggers(frame):
             bound_area = area
     
     if bound_index is not None:
-        print(f"bound_index = {bound_index}")
         points = [point[0] for point in contours[bound_index]]
         xs = [point[0] for point in points]
         ys = [point[1] for point in points]
@@ -148,9 +147,11 @@ def extract_all_niggers(frame):
     big_contours = []
     for contour in contours:
         area = cv2.contourArea(contour)
-        if area > 1000:
+        if area > 2_000:
             big_contours += [contour]    
 
+    big_contours = sorted(big_contours, key=lambda c: cv2.contourArea(c))[::-1][1:5]
+    # print(len(contours), len(big_contours))
     return bounds, big_contours, mask
 
 
@@ -158,34 +159,20 @@ def create_space(h: int, w: int, board_bounds: dict):
     space = pymunk.Space()
     space.gravity = 0, 8000
 
-    outer_bound_width = 5
-    inner_bound_width = 5
-
-    print(board_bounds['max_y'], board_bounds['min_y'])
-    print(h - board_bounds['max_y'], h - board_bounds['min_y'])
+    outer = 5
+    inner = 5
+    print("Board:", board_bounds)
 
     segments = [
-        pymunk.Poly(space.static_body, ((0, 0), (w, outer_bound_width))),
-        pymunk.Poly(space.static_body, ((0, 0), (outer_bound_width, h))),
-        pymunk.Poly(space.static_body, ((0, h - outer_bound_width), (w, h))),
-        pymunk.Poly(space.static_body, ((w - outer_bound_width, 0), (w, h))),
+        pymunk.Segment(space.static_body, (0, h-outer), (w, h), 0),
+        pymunk.Segment(space.static_body, (0, h-outer), (outer, 0), 0),
+        pymunk.Segment(space.static_body, (0, outer), (w, 0), 0),
+        pymunk.Segment(space.static_body, (w-outer, h), (w, 0), 0),
 
-        pymunk.Poly(space.static_body,
-                    ((board_bounds['max_x'], h - board_bounds['max_y'] - inner_bound_width),
-                     (board_bounds['min_x'], h - board_bounds['max_y']))
-                    ),
-        pymunk.Poly(space.static_body,
-                    ((board_bounds['min_x'], h - board_bounds['max_y']),
-                     (board_bounds['min_x'] + inner_bound_width, h - board_bounds['min_y']))
-                    ),
-        pymunk.Poly(space.static_body,
-                    ((board_bounds['max_x'], h - board_bounds['min_y']),
-                     (board_bounds['min_x'], h - board_bounds['min_y'] - inner_bound_width))
-                    ),
-        pymunk.Poly(space.static_body,
-                    ((board_bounds['max_x'] - inner_bound_width, h - board_bounds['max_y']),
-                     (board_bounds['max_x'], h - board_bounds['min_y']))
-                    ),
+        pymunk.Segment(space.static_body, (board_bounds['min_x'], board_bounds['max_y']-inner), (board_bounds['max_x'], board_bounds['max_y']), 0),
+        pymunk.Segment(space.static_body, (board_bounds['min_x'], board_bounds['max_y']-inner), (board_bounds['min_x'] + inner, board_bounds['min_y']), 0),
+        pymunk.Segment(space.static_body, (board_bounds['min_x'], board_bounds['min_y']+inner), (board_bounds['max_x'], board_bounds['min_y']), 0),
+        pymunk.Segment(space.static_body, (board_bounds['max_x']-inner, board_bounds['max_y']), (board_bounds['max_x'], board_bounds['min_y']), 0),
     ]
     for s in segments:
         space.add(s)
@@ -199,8 +186,16 @@ def add_poligons_to_space(space: pymunk.Space, poligons: list):
     for poligon in poligons:
         n = len(poligon)
         for i in range(n // 2):
+            p1 = poligon[i][0].astype(int)
+            p1 = [p1[0], p1[1]]
+            p2 = poligon[i + 1][0].astype(int)
+            p2 = [p2[0], p2[1]]
+            p3 = poligon[n - i - 1][0].astype(int)
+            p3 = [p3[0], p3[1]]
+            p4 = poligon[n - i - 2][0].astype(int)
+            p4 = [p4[0], p4[1]]
             polygon_shape = pymunk.Poly(space.static_body, [
-                poligon[i], poligon[i + 1], poligon[n - i - 1], poligon[n - i - 2]
+                p1, p2, p3, p4
             ])
             polygon_shape.friction = 0.1
             space.add(polygon_shape)
@@ -210,41 +205,37 @@ def add_poligons_to_space(space: pymunk.Space, poligons: list):
 
 
 def create_circle(space, pos, radius):
-    square_mass, square_size = 0.2, (150, 150)
+    square_mass, square_size = 0.7, (150, 150)
     square_moment = pymunk.moment_for_box(square_mass, square_size)
     square_body = pymunk.Body(square_mass, square_moment)
     square_body.position = pos
     square_shape = pymunk.Circle(square_body, radius)
-    square_shape.elasticity = 0
+    square_shape.elasticity = 0.5
     square_shape.friction = 0.1
     space.add(square_body, square_shape)
     return square_body
 
 
+low = 15
+up = 150
+
 main_window = "Window"
-debug_window = "Changed"
 cv2.namedWindow(main_window, cv2.WINDOW_NORMAL)
 cv2.setMouseCallback(main_window, on_mouse_callback)
-position = None
+position = [0, 0]
 
-is_camera_available = False
+is_camera_available = True
 camera = cv2.VideoCapture("rtsp://192.168.254.3:8080/h264_ulaw.sdp") if is_camera_available else None
-
-low = 104
-up = 111
 
 cv2.createTrackbar("Lower", main_window, low, 255, lupdate)
 cv2.createTrackbar("Upper", main_window, up, 255, uupdate)
 delta = 100
 amount = 10
 FPS = 60
-circle_radius = 50
+circle_radius = 20
 
 MODE = 1
 checking_position = False
-
-cv2.createTrackbar("Lower", main_window, low, 255, lupdate)
-cv2.createTrackbar("Upper", main_window, up, 255, uupdate)
 
 standart_pixel = [15, 12, 83]
 
@@ -254,25 +245,21 @@ static_frame = None
 
 width, height = None, None
 bounds = None
-poligons, figures = [], []
-
-# height, width = screen.shape[:2]
-# 
 
 # poligons = get_poligons(screen)
 # board_bounds, _ = get_board_bounds(screen)
 # print(board_bounds)
 
-# space = create_space(height, width, board_bounds)
-# add_poligons_to_space(space, poligons)
+space = None
+circle = None
+start_pos = (1180, 350)
 
 # pg.init()
 # surface = pg.display.set_mode((width, height))
-# clock = pg.time.Clock()
+clock = pg.time.Clock()
 # draw_options = pymunk.pygame_util.DrawOptions(surface)
 
 # start_pos = (800, 100)
-# start_pos = (1180, 350)
 # circle = create_circle(space, start_pos, circle_radius)
 
 while True:
@@ -281,11 +268,8 @@ while True:
     else:
         frame = screen.copy()
     origin = frame.copy()
-    # main_color = [
-    #     [0, 65, 0],
-    #     [111, 265, 111]
-    # ]
-    # print(main_color)
+    
+    bounds, figures, _ = extract_all_niggers(frame)
     
     if MODE == 1:
         if position is not None:
@@ -294,63 +278,29 @@ while True:
                     3,
                     (255, 128, 128),
                     3)
-        bounds, figures, mask = extract_all_niggers(frame)
         cv2.rectangle(frame,
                         (bounds['min_x'], bounds['min_y']),
                         (bounds['max_x'], bounds['max_y']),
                         (0, 0, 128),
                         3)
         for figure in figures:
-            cv2.drawContours(frame, [figure], 0, (255, 128, 128, 3))
+            cv2.drawContours(frame, [figure], 0, (255, 128, 128), 3)
         
-        cv2.imshow(main_window, mask)
+        cv2.imshow(main_window, frame)
     elif MODE == 2:
-        if static_frame is not None:
-            frame = static_frame.copy()
-            # if position is not None:
-            #     cv2.circle(frame,
-            #             (position[1], position[0]),
-            #             3,
-            #             (255, 128, 128),
-            #             3)
-            # bounds, bound_mask = get_board_bounds(frame, bound_color)
-            print(bounds)
-            cv2.rectangle(frame,
-                          (bounds['min_x'], bounds['min_y']),
-                          (bounds['max_x'], bounds['max_y']),
-                          (0, 0, 128),
-                          3)
-            
-            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            figure_color = standart_pixel if not checking_position else hsv[position[0], position[1]]
-            cv2.putText(frame,
-                    f"{figure_color}",
-                    (30, 60),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    1.3,
-                    (0, 255, 0),
-                    3)
-            # poligons, contours = get_poligons(frame, figure_color)
-            # for contour in contours:
-            #     if contour:
-            #         cv2.drawContours(frame, [contour], 0, (128, 0, 0), 3)
-            
-            cv2.imshow(main_window, frame)
-    # _, frame = get_board_bounds(frame)
-    # surface.fill(pg.Color('black'))
-
-    # for i in pg.event.get():
-    #     if i.type == pg.QUIT:
-    #         exit()
-
-    # print(circle.position)
-
-    # x, y = circle.position
-    # cv2.circle(frame,
-    #            (int(x), int(y)),
-    #            circle_radius // 2,
-    #            (180, 0, 0),
-    #            circle_radius)
+        
+        if circle is not None:
+            x, y = circle.position
+            cv2.circle(frame,
+                (int(x), int(y)),
+                circle_radius // 2,
+                (180, 0, 0),
+                circle_radius)
+        
+        cv2.imshow(main_window, frame)
+        
+        space.step(1 / FPS)
+        clock.tick(FPS)
 
     key = cv2.waitKey(1)
     if key == ord('q'):
@@ -359,21 +309,16 @@ while True:
     if key == ord('m'):
         MODE = 2 if MODE == 1 else 1
         if MODE == 2:
-            static_frame = origin.copy()
-            width, height = static_frame.shape[:2]
+            height, width = frame.shape[:2]
             print(f"Frame size: h,w = {height}, {width}")
-            bounds, figures = extract_all_niggers(static_frame, main_color)
+            space = create_space(height, width, bounds)
+            add_poligons_to_space(space, figures)
+            
+            start_pos = position[::-1]
+            circle = create_circle(space, start_pos, circle_radius)
     
     if key == ord('p'):
         checking_position = not checking_position
-    
-    # if key == ord('s'):
-    #     cv2.imwrite("screen.jpg", origin)
-    #
-    # space.step(1 / FPS)
-    # space.debug_draw(draw_options)
-    # pg.display.flip()
-    # clock.tick(FPS)
 
 if is_camera_available:
     camera.release()

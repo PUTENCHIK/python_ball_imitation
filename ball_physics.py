@@ -4,7 +4,7 @@ import pymunk.pygame_util
 pymunk.pygame_util.positive_y_is_up = False
 
 #параметры PyGame
-RES = WIDTH, HEIGHT = 900, 720
+RES = WIDTH, HEIGHT = 300, 300
 FPS = 60
 
 pg.init()
@@ -17,7 +17,7 @@ space = pymunk.Space()
 space.gravity = 0, 8000
 
 #платформа
-segment_shape = pymunk.Segment(space.static_body, (2, HEIGHT), (WIDTH, HEIGHT), 26)
+segment_shape = pymunk.Segment(space.static_body, (10, HEIGHT), (WIDTH, HEIGHT), 26)
 space.add(segment_shape)
 segment_shape.elasticity = 0.8
 segment_shape.friction = 1.0
