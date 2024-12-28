@@ -92,17 +92,8 @@ def get_board_bounds(frame, bound_color):
     return bounds, mask
 
 
-def extract_all_niggers(frame):
+def extract_all_objects(frame):
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    # lower = np.array([0, 0, 0])
-    # up_limit = 56
-    # upper = np.array([up_limit, up_limit, up_limit])
-    # lower = np.array([extract_color[0][0],
-    #                   extract_color[0][1],
-    #                   extract_color[0][2],])
-    # upper = np.array([extract_color[1][0],
-    #                   extract_color[1][1],
-    #                   extract_color[1][2],])
     lower = np.array([low, 165 - delta, low])
     upper = np.array([up, 165 + delta, up])
     
@@ -150,7 +141,7 @@ def extract_all_niggers(frame):
         if area > 2_000:
             big_contours += [contour]    
 
-    big_contours = sorted(big_contours, key=lambda c: cv2.contourArea(c))[::-1][1:5]
+    big_contours = sorted(big_contours, key=lambda c: cv2.contourArea(c))[::-1][1:15]
     # print(len(contours), len(big_contours))
     return bounds, big_contours, mask
 
@@ -199,9 +190,6 @@ def add_poligons_to_space(space: pymunk.Space, poligons: list):
             ])
             polygon_shape.friction = 0.1
             space.add(polygon_shape)
-        # polygon_shape = pymunk.Poly(space.static_body, poligon)
-        # polygon_shape.friction = 0.1
-        # space.add(polygon_shape)
 
 
 def create_circle(space, pos, radius):
@@ -246,21 +234,11 @@ static_frame = None
 width, height = None, None
 bounds = None
 
-# poligons = get_poligons(screen)
-# board_bounds, _ = get_board_bounds(screen)
-# print(board_bounds)
-
 space = None
 circle = None
 start_pos = (1180, 350)
 
-# pg.init()
-# surface = pg.display.set_mode((width, height))
 clock = pg.time.Clock()
-# draw_options = pymunk.pygame_util.DrawOptions(surface)
-
-# start_pos = (800, 100)
-# circle = create_circle(space, start_pos, circle_radius)
 
 while True:
     if is_camera_available:
@@ -269,7 +247,7 @@ while True:
         frame = screen.copy()
     origin = frame.copy()
     
-    bounds, figures, _ = extract_all_niggers(frame)
+    bounds, figures, _ = extract_all_objects(frame)
     
     if MODE == 1:
         if position is not None:
